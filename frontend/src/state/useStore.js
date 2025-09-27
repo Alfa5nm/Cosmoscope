@@ -3,6 +3,16 @@ import { create } from 'zustand';
 
 const defaultDate = formatISO(new Date(), { representation: 'date' });
 
+const createEmptyAnnotationEditor = () => ({
+  isOpen: false,
+  id: null,
+  datasetId: null,
+  geometry: null,
+  name: '',
+  notes: '',
+  createdAt: null
+});
+
 const useStore = create((set, get) => ({
   datasets: [],
   datasetStatus: 'idle',
@@ -19,6 +29,7 @@ const useStore = create((set, get) => ({
   annotations: [],
   annotationMode: 'idle',
   annotationStatus: 'idle',
+  annotationEditor: createEmptyAnnotationEditor(),
   mapExtent: null,
   mapCenter: [0, 0],
   mastResults: [],
@@ -66,6 +77,11 @@ const useStore = create((set, get) => ({
   clearAnnotations: () => set({ annotations: [] }),
   setAnnotationMode: (mode) => set({ annotationMode: mode }),
   setAnnotationStatus: (status) => set({ annotationStatus: status }),
+  openAnnotationEditor: (payload) =>
+    set({ annotationEditor: { ...createEmptyAnnotationEditor(), ...payload, isOpen: true } }),
+  updateAnnotationEditor: (updates) =>
+    set({ annotationEditor: { ...get().annotationEditor, ...updates } }),
+  closeAnnotationEditor: () => set({ annotationEditor: createEmptyAnnotationEditor() }),
   setMapState: ({ extent, center }) =>
     set({ mapExtent: extent ?? get().mapExtent, mapCenter: center ?? get().mapCenter }),
   setMastStatus: (status) => set({ mastStatus: status }),

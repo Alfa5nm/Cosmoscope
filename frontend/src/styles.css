@@ -198,6 +198,80 @@ button:disabled {
   overflow-y: auto;
 }
 
+.annotation-editor {
+  position: absolute;
+  bottom: 1.5rem;
+  left: 1.5rem;
+  width: min(320px, calc(100% - 3rem));
+  background: rgba(7, 13, 28, 0.92);
+  border: 1px solid rgba(136, 192, 255, 0.25);
+  border-radius: 0.85rem;
+  box-shadow: 0 16px 32px rgba(0, 0, 0, 0.4);
+  padding: 1.1rem;
+  z-index: 40;
+  backdrop-filter: blur(10px);
+}
+
+.annotation-editor__form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.annotation-editor__form h4 {
+  margin: 0;
+  font-size: 0.95rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.annotation-editor__form label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.annotation-editor__form input,
+.annotation-editor__form textarea {
+  width: 100%;
+  font-family: inherit;
+  font-size: 0.85rem;
+  padding: 0.5rem 0.65rem;
+  border-radius: 0.65rem;
+  border: 1px solid rgba(136, 192, 255, 0.35);
+  background: rgba(9, 16, 30, 0.8);
+  color: #f4f7ff;
+  resize: vertical;
+}
+
+.annotation-editor__form textarea {
+  min-height: 96px;
+}
+
+.annotation-editor__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+
+.annotation-editor__button {
+  border-radius: 0.65rem;
+  padding: 0.45rem 0.9rem;
+  border: 1px solid rgba(136, 192, 255, 0.45);
+  background: rgba(136, 192, 255, 0.22);
+  color: #f4f7ff;
+  font-size: 0.8rem;
+}
+
+.annotation-editor__button--secondary {
+  background: transparent;
+  border-color: rgba(255, 255, 255, 0.25);
+  color: rgba(255, 255, 255, 0.75);
+}
+
 .annotation-item {
   background: rgba(16, 28, 53, 0.8);
   padding: 0.5rem 0.6rem;

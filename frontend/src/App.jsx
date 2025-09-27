@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { format, parseISO } from 'date-fns';
 import MapViewport from './components/MapViewport.jsx';
+import AnnotationEditor from './components/AnnotationEditor.jsx';
 import ComparisonMaps from './components/ComparisonMaps.jsx';
 import AnnotationPanel from './components/AnnotationPanel.jsx';
 import DeepSpaceSearch from './components/DeepSpaceSearch.jsx';
@@ -346,6 +347,7 @@ export default function App() {
 
       <main className="app-main">
         <MapViewport />
+        <AnnotationEditor />
         <div className="map-toolbar">
           {selectedDataset && (
             <div className="badge">
