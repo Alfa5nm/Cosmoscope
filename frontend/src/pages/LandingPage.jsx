@@ -2,7 +2,8 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSpaceAudio } from '../state/SpaceAudioContext.js';
 import { celestialBodies } from '../data/celestialBodies.js';
-import { getVisitedBodies } from '../utils/progress.js';
+import MissionBoard from '../components/MissionBoard.jsx';
+import { getVisitedBodies, markBodyVisited } from '../utils/progress.js';
 
 function usePrefersReducedMotion() {
   const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
@@ -140,7 +141,11 @@ export default function LandingPage() {
     navigate('/explore');
   }
 
-  const topTargets = celestialBodies.slice(0, 5);
+  function handleMissionComplete(missionId) {
+    const updated = markBodyVisited(missionId);
+    setVisitedBodies(new Set(updated));
+    return updated;
+  }
 
   return (
     <div className="landing-root">
@@ -168,14 +173,7 @@ export default function LandingPage() {
           <p>
             Visited bodies: {progress.visited} / {progress.total} ({Number.isFinite(progress.percentage) ? progress.percentage : 0}% complete)
           </p>
-          <ul>
-            {topTargets.map((body) => (
-              <li key={body.id} className={visitedBodies.has(body.id) ? 'visited' : ''}>
-                <span>{body.name}</span>
-                <span>{visitedBodies.has(body.id) ? '✓ Logged' : 'Awaiting Briefing'}</span>
-              </li>
-            ))}
-          </ul>
+          <MissionBoard visitedBodies={visitedBodies} onMissionComplete={handleMissionComplete} />
         </section>
         <section className="landing-footer">
           <p>
