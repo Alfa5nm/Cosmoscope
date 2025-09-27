@@ -72,7 +72,7 @@ export default function NavigationConsole({
         }
         return true;
       })
-      .sort((a, b) => a.orbitRadius - b.orbitRadius);
+      .sort((a, b) => (a.semiMajorAxis ?? 0) - (b.semiMajorAxis ?? 0));
   }, [bodies, filterValue, visitFilter, visitedSet]);
 
   const selectedBody = useMemo(
