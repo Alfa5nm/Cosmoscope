@@ -7,6 +7,7 @@ import { celestialBodies, getBodyById } from '../data/celestialBodies.js';
 import { getVisitedBodies, markBodyVisited } from '../utils/progress.js';
 import { useSpaceAudio } from '../state/SpaceAudioContext.js';
 import NavigationConsole from '../components/NavigationConsole.jsx';
+import { useBodyTextureMaps } from '../utils/textureRegistry.js';
 
 const OrbitRing = forwardRef(function OrbitRing({ semiMajor, semiMinor, inclination = 0 }, ref) {
   const points = useMemo(() => {
@@ -49,6 +50,7 @@ function CelestialBody({ body, isSelected, onSelect, onExplore, onPositionUpdate
   const worldPosition = useRef(new THREE.Vector3());
   const orbitalPosition = useRef(new THREE.Vector3());
   const orbitAngle = useRef(Math.random() * Math.PI * 2);
+  const textureMaps = useBodyTextureMaps(body);
 
   const ringTexture = useMemo(() => {
     if (!body.rings) return null;
@@ -65,7 +67,7 @@ function CelestialBody({ body, isSelected, onSelect, onExplore, onPositionUpdate
     ctx.fillStyle = gradient;
     ctx.fillRect(0, 0, size, size);
     const texture = new THREE.CanvasTexture(canvas);
-    texture.encoding = THREE.sRGBEncoding;
+    texture.colorSpace = THREE.SRGBColorSpace;
     texture.needsUpdate = true;
     return texture;
   }, [body.rings]);
@@ -76,42 +78,6 @@ function CelestialBody({ body, isSelected, onSelect, onExplore, onPositionUpdate
       ringTexture.dispose();
     };
   }, [ringTexture]);
-
-  const textureMaps = body.textureMaps;
-
-  useEffect(() => {
-    if (!textureMaps) {
-      return undefined;
-    }
-
-    const entries =
-      textureMaps instanceof Map
-        ? Array.from(textureMaps.entries())
-        : Object.entries(textureMaps);
-
-    entries.forEach(([mapType, texture]) => {
-      if (!(texture instanceof THREE.Texture)) {
-        return;
-      }
-
-      const normalizedType = String(mapType).toLowerCase();
-      const isNormalMap = normalizedType.includes('normal');
-      const isColorBearing =
-        normalizedType.includes('diffuse') ||
-        normalizedType.includes('emissive') ||
-        normalizedType.includes('albedo') ||
-        normalizedType.includes('color');
-
-      if (!isColorBearing || isNormalMap) {
-        return;
-      }
-
-      texture.colorSpace = THREE.SRGBColorSpace;
-      texture.needsUpdate = true;
-    });
-
-    return undefined;
-  }, [textureMaps]);
 
   useEffect(() => {
     if (tiltGroupRef.current) {
@@ -198,7 +164,10 @@ function CelestialBody({ body, isSelected, onSelect, onExplore, onPositionUpdate
             <meshStandardMaterial
               color={body.color}
               emissive={body.id === 'sun' ? '#c96f15' : '#111'}
-              emissiveIntensity={0.2}
+              emissiveIntensity={body.id === 'sun' ? 0.35 : 0.2}
+              map={textureMaps?.map}
+              normalMap={textureMaps?.normalMap}
+              emissiveMap={textureMaps?.emissiveMap}
             />
             {body.rings && ringTexture && (
               <mesh rotation={[Math.PI / 2, 0, 0]}>
