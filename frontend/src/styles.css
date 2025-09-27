@@ -33,6 +33,19 @@ button {
   transition: background 0.2s ease, transform 0.15s ease;
 }
 
+.secondary {
+  background: rgba(9, 12, 24, 0.65);
+  border: 1px solid rgba(136, 192, 255, 0.35);
+  color: #f6fbff;
+}
+
+.primary {
+  background: linear-gradient(135deg, #5fd3ff, #736bff);
+  border: none;
+  color: #050505;
+  font-weight: 600;
+}
+
 button:hover {
   background: rgba(136, 192, 255, 0.25);
   transform: translateY(-1px);
@@ -196,6 +209,391 @@ button:disabled {
   gap: 0.5rem;
   max-height: 220px;
   overflow-y: auto;
+}
+
+/* Landing Page */
+
+.landing-root {
+  position: relative;
+  min-height: 100vh;
+  overflow: hidden;
+  color: #f7f8ff;
+}
+
+.landing-backdrop {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  z-index: -2;
+}
+
+.landing-gradient {
+  position: fixed;
+  inset: 0;
+  background: radial-gradient(circle at 30% 20%, rgba(74, 118, 214, 0.4), transparent 45%),
+    radial-gradient(circle at 70% 60%, rgba(225, 117, 255, 0.28), transparent 55%),
+    rgba(5, 6, 16, 0.85);
+  z-index: -1;
+}
+
+.landing-content {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 4rem 1.5rem 6rem;
+  display: grid;
+  gap: 2rem;
+}
+
+.landing-header h1 {
+  font-size: clamp(2.5rem, 5vw, 3.5rem);
+  margin-bottom: 1rem;
+}
+
+.landing-header p {
+  font-size: 1.1rem;
+  line-height: 1.6;
+  color: rgba(241, 246, 255, 0.85);
+}
+
+.landing-subtitle {
+  text-transform: uppercase;
+  letter-spacing: 0.3em;
+  font-size: 0.75rem;
+  color: rgba(210, 220, 255, 0.6);
+}
+
+.landing-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  align-items: center;
+}
+
+.landing-actions .primary {
+  background: linear-gradient(135deg, #5fd3ff, #736bff);
+  border: none;
+  color: #050505;
+  font-weight: 600;
+  padding: 0.9rem 2.2rem;
+  box-shadow: 0 10px 30px rgba(115, 107, 255, 0.3);
+}
+
+.landing-actions .secondary {
+  background: rgba(8, 13, 28, 0.6);
+  border: 1px solid rgba(136, 192, 255, 0.4);
+  padding: 0.85rem 1.8rem;
+}
+
+.landing-progress {
+  background: rgba(7, 10, 22, 0.7);
+  border: 1px solid rgba(136, 192, 255, 0.18);
+  border-radius: 1.2rem;
+  padding: 1.5rem;
+  backdrop-filter: blur(14px);
+}
+
+.landing-progress ul {
+  margin: 1.25rem 0 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 0.6rem;
+}
+
+.landing-progress li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.65rem 0.9rem;
+  border-radius: 0.75rem;
+  background: rgba(13, 20, 40, 0.7);
+  border: 1px solid rgba(136, 192, 255, 0.12);
+}
+
+.landing-progress li.visited {
+  border-color: rgba(149, 254, 170, 0.35);
+  background: rgba(12, 24, 32, 0.85);
+}
+
+.landing-footer {
+  font-size: 0.95rem;
+  line-height: 1.6;
+  color: rgba(227, 235, 255, 0.8);
+}
+
+.landing-footer .link {
+  background: none;
+  border: none;
+  color: #8bd7ff;
+  padding: 0;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.motion-note {
+  margin-top: 0.75rem;
+  font-size: 0.85rem;
+  color: rgba(196, 205, 228, 0.7);
+}
+
+/* Solar System Experience */
+
+.solar-root {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  background: radial-gradient(circle at top, #060815, #02030a 70%);
+}
+
+.solar-hud {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 2rem;
+  background: rgba(4, 8, 20, 0.9);
+  border-bottom: 1px solid rgba(136, 192, 255, 0.12);
+  backdrop-filter: blur(12px);
+  z-index: 5;
+}
+
+.solar-hud button {
+  font-size: 0.95rem;
+}
+
+.solar-status h1 {
+  margin: 0 0 0.3rem;
+  font-size: 1.4rem;
+}
+
+.solar-status p {
+  margin: 0.25rem 0;
+  color: rgba(214, 225, 255, 0.8);
+}
+
+.solar-main {
+  flex: 1;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 360px;
+  min-height: 0;
+}
+
+.solar-main canvas {
+  width: 100%;
+  height: 100%;
+}
+
+.solar-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(220, 230, 255, 0.8);
+  font-size: 1.2rem;
+}
+
+.solar-briefing {
+  padding: 1.5rem;
+  background: rgba(7, 12, 24, 0.88);
+  border-left: 1px solid rgba(136, 192, 255, 0.12);
+  overflow-y: auto;
+  backdrop-filter: blur(12px);
+}
+
+.solar-briefing h2 {
+  margin-top: 0;
+}
+
+.solar-briefing ul {
+  padding-left: 1rem;
+  line-height: 1.6;
+}
+
+.body-tooltip {
+  background: rgba(9, 12, 22, 0.92);
+  border: 1px solid rgba(136, 192, 255, 0.25);
+  padding: 0.9rem;
+  border-radius: 0.75rem;
+  width: 220px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
+  backdrop-filter: blur(8px);
+}
+
+.body-tooltip h3 {
+  margin: 0 0 0.5rem;
+  font-size: 1rem;
+}
+
+.body-tooltip p {
+  font-size: 0.85rem;
+  line-height: 1.4;
+  color: rgba(206, 217, 255, 0.85);
+}
+
+.body-tooltip button {
+  margin-top: 0.75rem;
+  width: 100%;
+  background: linear-gradient(135deg, #58d6ff, #7a6fff);
+  border: none;
+  color: #050505;
+  font-weight: 600;
+  padding: 0.5rem 1rem;
+}
+
+/* Body detail */
+
+.body-detail {
+  min-height: 100vh;
+  padding: 2rem clamp(1.25rem, 4vw, 3rem) 4rem;
+  background: linear-gradient(180deg, rgba(6, 10, 23, 0.95) 0%, rgba(9, 10, 20, 1) 100%);
+  color: #f2f5ff;
+  display: grid;
+  gap: 2rem;
+}
+
+.body-detail header {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.body-detail header button {
+  align-self: flex-start;
+}
+
+.body-summary ul {
+  list-style: disc;
+  margin: 1rem 0 0 1.5rem;
+  line-height: 1.7;
+  color: rgba(215, 224, 255, 0.85);
+}
+
+.body-datasets .dataset-grid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+}
+
+.body-datasets article {
+  background: rgba(10, 13, 28, 0.78);
+  border: 1px solid rgba(136, 192, 255, 0.14);
+  border-radius: 1rem;
+  padding: 1.25rem;
+  backdrop-filter: blur(10px);
+}
+
+.body-datasets .attribution {
+  font-size: 0.75rem;
+  color: rgba(187, 200, 245, 0.65);
+  margin-top: 0.75rem;
+}
+
+.body-media .media-grid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.media-card {
+  display: block;
+  background: rgba(9, 12, 24, 0.78);
+  border: 1px solid rgba(136, 192, 255, 0.16);
+  border-radius: 1rem;
+  overflow: hidden;
+  color: inherit;
+  text-decoration: none;
+  transition: transform 0.2s ease, border 0.2s ease;
+}
+
+.media-card:hover {
+  transform: translateY(-4px);
+  border-color: rgba(148, 255, 197, 0.4);
+}
+
+.media-card img {
+  width: 100%;
+  height: 160px;
+  object-fit: cover;
+}
+
+.media-card div {
+  padding: 1rem;
+}
+
+.media-card h3 {
+  margin: 0 0 0.5rem;
+  font-size: 1rem;
+}
+
+.media-card p {
+  margin: 0;
+  font-size: 0.85rem;
+  color: rgba(202, 214, 255, 0.8);
+}
+
+.body-apod article {
+  display: grid;
+  grid-template-columns: minmax(0, 320px) minmax(0, 1fr);
+  gap: 1.5rem;
+  align-items: stretch;
+  background: rgba(8, 10, 22, 0.85);
+  border-radius: 1.2rem;
+  border: 1px solid rgba(136, 192, 255, 0.2);
+  overflow: hidden;
+}
+
+.body-apod img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.body-apod h3 {
+  margin-top: 0;
+}
+
+.body-footer {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.body-detail.missing {
+  padding: 4rem;
+  display: grid;
+  gap: 1.5rem;
+  justify-items: flex-start;
+}
+
+.error {
+  color: #ff8b8b;
+}
+
+@media (max-width: 960px) {
+  .solar-main {
+    grid-template-columns: 1fr;
+  }
+
+  .solar-briefing {
+    border-left: none;
+    border-top: 1px solid rgba(136, 192, 255, 0.12);
+  }
+}
+
+@media (max-width: 768px) {
+  .landing-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .landing-progress li {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.25rem;
+  }
+
+  .body-apod article {
+    grid-template-columns: 1fr;
+  }
 }
 
 .annotation-editor {
