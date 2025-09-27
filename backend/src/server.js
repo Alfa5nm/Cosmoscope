@@ -152,20 +152,32 @@ app.get('/api/gibs/available-dates', async (req, res) => {
   const today = new Date();
   const results = [];
 
-  for (let i = 0; i < days; i += 1) {
+  const descriptors = Array.from({ length: days }, (_value, index) => {
     const date = new Date(today);
-    date.setDate(today.getDate() - i);
+    date.setDate(today.getDate() - index);
     const iso = date.toISOString().slice(0, 10);
     const testUrl = `https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/${layer}/default/${iso}/GoogleMapsCompatible_Level6/0/0/0.jpg`;
-    try {
-      const response = await fetch(testUrl, { method: 'HEAD' });
-      if (response.ok) {
+    return { iso, testUrl };
+  });
+
+  const checks = descriptors.map(({ testUrl }) =>
+    fetch(testUrl, { method: 'HEAD' })
+  );
+
+  const responses = await Promise.allSettled(checks);
+
+  responses.forEach((result, index) => {
+    const { iso } = descriptors[index];
+    if (result.status === 'fulfilled') {
+      if (result.value.ok) {
         results.push(iso);
+      } else {
+        console.warn('Date availability check failed', `HTTP ${result.value.status}`);
       }
-    } catch (error) {
-      console.warn('Date availability check failed', error.message);
+    } else {
+      console.warn('Date availability check failed', result.reason?.message || result.reason);
     }
-  }
+  });
 
   res.json({ layer, dates: results });
 });
