@@ -1,4 +1,4 @@
-import { Suspense, useEffect, useMemo, useRef, useState } from 'react';
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { Html, OrbitControls, Stars } from '@react-three/drei';
 import * as THREE from 'three';
@@ -6,6 +6,7 @@ import { useNavigate } from 'react-router-dom';
 import { celestialBodies, getBodyById } from '../data/celestialBodies.js';
 import { getVisitedBodies, markBodyVisited } from '../utils/progress.js';
 import { useSpaceAudio } from '../state/SpaceAudioContext.js';
+import NavigationConsole from '../components/NavigationConsole.jsx';
 
 function OrbitRing({ radius }) {
   const points = useMemo(() => {
@@ -26,10 +27,11 @@ function OrbitRing({ radius }) {
   );
 }
 
-function CelestialBody({ body, isSelected, onSelect, onExplore }) {
+function CelestialBody({ body, isSelected, onSelect, onExplore, onPositionUpdate }) {
   const groupRef = useRef();
   const meshRef = useRef();
   const worldPosition = useRef(new THREE.Vector3());
+  const orbitalPosition = useRef(new THREE.Vector3());
 
   useFrame(({ clock }) => {
     const elapsed = clock.getElapsedTime();
@@ -38,6 +40,10 @@ function CelestialBody({ body, isSelected, onSelect, onExplore }) {
     const z = Math.sin(orbitAngle) * body.orbitRadius;
     if (groupRef.current) {
       groupRef.current.position.set(x, 0, z);
+    }
+    orbitalPosition.current.set(x, 0, z);
+    if (onPositionUpdate) {
+      onPositionUpdate(body.id, orbitalPosition.current);
     }
     if (meshRef.current) {
       meshRef.current.rotation.y += body.rotationSpeed;
@@ -112,23 +118,57 @@ export default function SolarSystemPage() {
   });
   const [visitedBodies, setVisitedBodies] = useState(() => getVisitedBodies());
   const { start } = useSpaceAudio();
+  const bodyPositionsRef = useRef(new Map());
 
   useEffect(() => {
     start();
   }, [start]);
 
-  const selectedBody = getBodyById(selectedBodyId);
+  const handlePositionUpdate = useCallback((bodyId, position) => {
+    bodyPositionsRef.current.set(bodyId, [position.x, position.y, position.z]);
+  }, []);
 
-  function handleSelect(body, worldPosition) {
+  const handleConsoleSelect = useCallback((bodyId) => {
+    const body = getBodyById(bodyId);
+    if (!body) return;
+    setSelectedBodyId(bodyId);
+    const stored = bodyPositionsRef.current.get(bodyId);
+    if (stored) {
+      setFocusPosition([stored[0], stored[1], stored[2]]);
+    } else {
+      setFocusPosition([body.orbitRadius, 0, 0]);
+    }
+  }, []);
+
+  const handleMarkVisited = useCallback((bodyId) => {
+    const updated = markBodyVisited(bodyId);
+    setVisitedBodies(updated);
+  }, []);
+
+  const handleSelect = useCallback((body, worldPosition) => {
     setSelectedBodyId(body.id);
     setFocusPosition([worldPosition.x, worldPosition.y, worldPosition.z]);
-  }
+  }, []);
 
-  function handleExplore(body) {
-    const updated = markBodyVisited(body.id);
-    setVisitedBodies(updated);
-    navigate(`/explore/${body.id}`);
-  }
+  const handleExplore = useCallback(
+    (body) => {
+      handleMarkVisited(body.id);
+      navigate(`/explore/${body.id}`);
+    },
+    [handleMarkVisited, navigate]
+  );
+
+  const handleBeginExploration = useCallback(
+    (bodyId) => {
+      const body = getBodyById(bodyId);
+      if (body) {
+        handleExplore(body);
+      }
+    },
+    [handleExplore]
+  );
+
+  const selectedBody = getBodyById(selectedBodyId);
 
   const progressPercentage = Math.round((visitedBodies.size / celestialBodies.length) * 100);
 
@@ -148,43 +188,56 @@ export default function SolarSystemPage() {
         </button>
       </header>
       <main className="solar-main">
-        <Suspense fallback={<div className="solar-loading">Preparing star charts…</div>}>
-          <Canvas camera={{ position: [0, 12, 55], fov: 50 }} shadows>
-            <color attach="background" args={[0x02030f]} />
-            <ambientLight intensity={0.2} />
-            <pointLight position={[0, 0, 0]} intensity={2.5} color="#ffdca8" />
-            <Stars radius={120} depth={40} count={3000} factor={6} saturation={0} fade speed={0.5} />
-            {celestialBodies.map((body) => (
-              <CelestialBody
-                key={body.id}
-                body={body}
-                isSelected={body.id === selectedBodyId}
-                onSelect={handleSelect}
-                onExplore={handleExplore}
-              />
-            ))}
-            <CameraRig focusPosition={focusPosition} />
-            <OrbitControls enablePan={false} enableZoom enableDamping dampingFactor={0.1} minDistance={6} maxDistance={120} />
-          </Canvas>
-        </Suspense>
-        <aside className="solar-briefing" aria-live="polite">
-          {selectedBody ? (
-            <div>
-              <h2>{selectedBody.name} Mission Briefing</h2>
-              <p>{selectedBody.description}</p>
-              <ul>
-                {selectedBody.highlights.map((highlight) => (
-                  <li key={highlight}>{highlight}</li>
-                ))}
-              </ul>
-              <button className="primary" onClick={() => handleExplore(selectedBody)}>
-                Explore NASA Data
-              </button>
-            </div>
-          ) : (
-            <p>Select a body to view its briefing.</p>
-          )}
-        </aside>
+        <section className="solar-stage">
+          <Suspense fallback={<div className="solar-loading">Preparing star charts…</div>}>
+            <Canvas camera={{ position: [0, 12, 55], fov: 50 }} shadows>
+              <color attach="background" args={[0x02030f]} />
+              <ambientLight intensity={0.2} />
+              <pointLight position={[0, 0, 0]} intensity={2.5} color="#ffdca8" />
+              <Stars radius={120} depth={40} count={3000} factor={6} saturation={0} fade speed={0.5} />
+              {celestialBodies.map((body) => (
+                <CelestialBody
+                  key={body.id}
+                  body={body}
+                  isSelected={body.id === selectedBodyId}
+                  onSelect={handleSelect}
+                  onExplore={handleExplore}
+                  onPositionUpdate={handlePositionUpdate}
+                />
+              ))}
+              <CameraRig focusPosition={focusPosition} />
+              <OrbitControls enablePan={false} enableZoom enableDamping dampingFactor={0.1} minDistance={6} maxDistance={120} />
+            </Canvas>
+          </Suspense>
+        </section>
+        <div className="solar-sidebar">
+          <NavigationConsole
+            bodies={celestialBodies}
+            selectedBodyId={selectedBodyId}
+            visitedBodies={visitedBodies}
+            onSelectBody={handleConsoleSelect}
+            onMarkVisited={handleMarkVisited}
+            onBeginExploration={handleBeginExploration}
+          />
+          <aside className="solar-briefing" aria-live="polite">
+            {selectedBody ? (
+              <div>
+                <h2>{selectedBody.name} Mission Briefing</h2>
+                <p>{selectedBody.description}</p>
+                <ul>
+                  {selectedBody.highlights.map((highlight) => (
+                    <li key={highlight}>{highlight}</li>
+                  ))}
+                </ul>
+                <button className="primary" onClick={() => handleExplore(selectedBody)}>
+                  Explore NASA Data
+                </button>
+              </div>
+            ) : (
+              <p>Select a body to view its briefing.</p>
+            )}
+          </aside>
+        </div>
       </main>
     </div>
   );
