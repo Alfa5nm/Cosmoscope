@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { format, parseISO } from 'date-fns';
 import MapViewport from './components/MapViewport.jsx';
 import ComparisonMaps from './components/ComparisonMaps.jsx';
@@ -127,30 +127,77 @@ export default function App() {
     loadApod();
   }, []);
 
+  const dateCacheRef = useRef(new Map());
+  const lastDatasetKeyRef = useRef(null);
+
   useEffect(() => {
-    async function loadDates() {
-      if (!selectedDataset?.layerId || selectedDataset?.category !== 'earth') {
+    const state = useStore.getState();
+    const currentDatasetId = state.selectedDatasetId;
+    const currentDataset = state.datasets.find((dataset) => dataset.id === currentDatasetId);
+
+    if (!currentDataset) {
+      if (lastDatasetKeyRef.current !== null) {
+        lastDatasetKeyRef.current = null;
         setAvailableDates([]);
-        return;
       }
+      return;
+    }
+
+    const datasetKey =
+      currentDataset.category === 'earth' && currentDataset.layerId
+        ? `${currentDataset.layerId}:${currentDataset.timeRangeDays || ''}`
+        : `no-layer:${currentDataset.id}`;
+
+    if (lastDatasetKeyRef.current !== datasetKey) {
+      setAvailableDates([]);
+      lastDatasetKeyRef.current = datasetKey;
+    }
+
+    if (currentDataset.category !== 'earth' || !currentDataset.layerId) {
+      return;
+    }
+
+    const cachedDates = dateCacheRef.current.get(datasetKey);
+    const currentSelectedDate = state.selectedDate;
+
+    if (cachedDates) {
+      setAvailableDates(cachedDates);
+      if (!cachedDates.includes(currentSelectedDate) && cachedDates.length > 0) {
+        setSelectedDate(cachedDates[0]);
+      }
+      return;
+    }
+
+    let cancelled = false;
+
+    async function loadDates() {
       try {
         const response = await fetch(
-          `/api/gibs/available-dates?layer=${selectedDataset.layerId}&days=${selectedDataset.timeRangeDays || 14}`
+          `/api/gibs/available-dates?layer=${currentDataset.layerId}&days=${currentDataset.timeRangeDays || 14}`
         );
         if (!response.ok) return;
         const data = await response.json();
-        if (Array.isArray(data.dates) && data.dates.length > 0) {
+        if (Array.isArray(data.dates) && data.dates.length > 0 && !cancelled) {
+          dateCacheRef.current.set(datasetKey, data.dates);
           setAvailableDates(data.dates);
-          if (!data.dates.includes(selectedDate)) {
+          const latestSelectedDate = useStore.getState().selectedDate;
+          if (!data.dates.includes(latestSelectedDate)) {
             setSelectedDate(data.dates[0]);
           }
         }
       } catch (error) {
-        console.warn('Failed to load available dates', error);
+        if (!cancelled) {
+          console.warn('Failed to load available dates', error);
+        }
       }
     }
+
     loadDates();
-  }, [selectedDataset, selectedDate, setSelectedDate]);
+
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedDataset?.id, selectedDataset?.layerId, selectedDataset?.timeRangeDays]);
 
   const saveAnnotations = async () => {
     try {
