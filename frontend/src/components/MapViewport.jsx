@@ -60,10 +60,10 @@ export default function MapViewport() {
     selectedDate,
     annotations,
     annotationMode,
-    addAnnotation,
     setAnnotationMode,
     setAnnotations,
-    setMapState
+    setMapState,
+    openAnnotationEditor
   } = useStore((state) => ({
     datasets: state.datasets,
     selectedDatasetId: state.selectedDatasetId,
@@ -71,10 +71,10 @@ export default function MapViewport() {
     selectedDate: state.selectedDate,
     annotations: state.annotations,
     annotationMode: state.annotationMode,
-    addAnnotation: state.addAnnotation,
     setAnnotationMode: state.setAnnotationMode,
     setAnnotations: state.setAnnotations,
-    setMapState: state.setMapState
+    setMapState: state.setMapState,
+    openAnnotationEditor: state.openAnnotationEditor
   }));
 
   const selectedDataset = useMemo(
@@ -234,20 +234,21 @@ export default function MapViewport() {
       });
 
       const id = `anno-${Date.now()}`;
-      const name = window.prompt('Annotation title', 'New annotation');
-      const notes = window.prompt('Notes', '');
-      const annotation = {
-        type: 'Feature',
-        geometry,
+      const createdAt = new Date().toISOString();
+
+      const source = annotationsLayerRef.current?.getSource();
+      if (source) {
+        source.removeFeature(feature);
+      }
+
+      openAnnotationEditor({
         id,
-        properties: {
-          datasetId: selectedDatasetId,
-          createdAt: new Date().toISOString(),
-          name: name || 'Untitled feature',
-          notes: notes || ''
-        }
-      };
-      addAnnotation(annotation);
+        geometry,
+        datasetId: selectedDatasetId,
+        name: 'New annotation',
+        notes: '',
+        createdAt
+      });
       setAnnotationMode('idle');
     });
 
@@ -257,7 +258,7 @@ export default function MapViewport() {
     return () => {
       map.removeInteraction(draw);
     };
-  }, [annotationMode, selectedDatasetId, addAnnotation, setAnnotationMode]);
+  }, [annotationMode, selectedDatasetId, setAnnotationMode, openAnnotationEditor]);
 
   return <div ref={mapElementRef} className="map-container" role="presentation" />;
 }
