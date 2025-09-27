@@ -3,23 +3,43 @@ const textureModules = import.meta.glob('../assets/textures/**/*.{jpg,jpeg,png,w
   import: 'default'
 });
 
+function registerLookupEntry(registry, key, module) {
+  if (!key || !module) {
+    return;
+  }
+  const trimmed = key.trim();
+  if (!trimmed) {
+    return;
+  }
+  registry[trimmed] = module;
+  registry[trimmed.toLowerCase()] = module;
+}
+
 const textureLookup = Object.entries(textureModules).reduce((acc, [path, module]) => {
   if (!module) {
     return acc;
   }
   const segments = path.split('/');
-  const fileName = segments[segments.length - 1];
+  const fileName = segments[segments.length - 1] ?? '';
   const baseName = fileName.replace(/\.[^.]+$/, '');
-  acc[fileName] = module;
-  acc[baseName] = module;
+  registerLookupEntry(acc, fileName, module);
+  registerLookupEntry(acc, baseName, module);
   return acc;
 }, {});
 
+function normalizeKey(key) {
+  if (typeof key !== 'string') {
+    return '';
+  }
+  return key.trim();
+}
+
 export function resolveTextureSource(key) {
-  if (!key) {
+  const normalized = normalizeKey(key);
+  if (!normalized) {
     return null;
   }
-  return textureLookup[key] ?? null;
+  return textureLookup[normalized] ?? textureLookup[normalized.toLowerCase()] ?? null;
 }
 
 export function buildTextureSet({ textureKey, normalMapKey, emissiveMapKey } = {}) {
