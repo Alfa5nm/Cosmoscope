@@ -1,12 +1,70 @@
-export const celestialBodies = [
+const DISTANCE_LOG_FACTOR = 5;
+const DISTANCE_SCALE = 22;
+const ORBITAL_DAY_SCALE = 2.1;
+const ROTATION_HOUR_SCALE = 13;
+const MOON_DISTANCE_SCALE = 0.000009;
+const DEG_TO_RAD = Math.PI / 180;
+
+function scaleOrbitDistance({ au, km }) {
+  if (typeof au === 'number') {
+    if (au === 0) return 0;
+    return Math.log10(1 + au * DISTANCE_LOG_FACTOR) * DISTANCE_SCALE;
+  }
+  if (typeof km === 'number') {
+    if (km === 0) return 0;
+    return km * MOON_DISTANCE_SCALE;
+  }
+  return 0;
+}
+
+function computeRotationRate(rotationPeriodHours = 0) {
+  if (!rotationPeriodHours) {
+    return 0;
+  }
+  const direction = rotationPeriodHours < 0 ? -1 : 1;
+  const period = Math.abs(rotationPeriodHours);
+  return (direction * 2 * Math.PI) / (period * ROTATION_HOUR_SCALE);
+}
+
+function computeOrbitRate(orbitalPeriodDays = 0) {
+  if (!orbitalPeriodDays) {
+    return 0;
+  }
+  return (2 * Math.PI) / (orbitalPeriodDays * ORBITAL_DAY_SCALE);
+}
+
+function prepareBody(body) {
+  const semiMajorAxis = body.semiMajorAxis;
+  const eccentricity = body.eccentricity ?? 0;
+  const semiMinorAxis = semiMajorAxis * Math.sqrt(1 - eccentricity * eccentricity);
+  const axialTilt = body.axialTilt ?? 0;
+  const inclination = body.inclination ?? 0;
+
+  return {
+    ...body,
+    semiMajorAxis,
+    semiMinorAxis,
+    orbitRate: computeOrbitRate(body.orbitalPeriodDays),
+    rotationRate: computeRotationRate(body.rotationPeriodHours),
+    axialTilt,
+    axialTiltRad: axialTilt * DEG_TO_RAD,
+    inclination,
+    inclinationRad: inclination * DEG_TO_RAD
+  };
+}
+
+const rawBodies = [
   {
     id: 'sun',
     name: 'Sun',
     color: '#f7b733',
-    orbitRadius: 0,
     size: 4.5,
-    orbitSpeed: 0,
-    rotationSpeed: 0.0005,
+    semiMajorAxis: 0,
+    eccentricity: 0,
+    orbitalPeriodDays: 0,
+    rotationPeriodHours: 609.12,
+    axialTilt: 7.25,
+    inclination: 0,
     description:
       'Our local star powers life on Earth and drives space weather across the solar system. Its surface boils with convection cells while solar flares hurl charged particles into space.',
     highlights: [
@@ -21,10 +79,13 @@ export const celestialBodies = [
     id: 'mercury',
     name: 'Mercury',
     color: '#b5b3aa',
-    orbitRadius: 9,
     size: 0.4,
-    orbitSpeed: 0.012,
-    rotationSpeed: 0.001,
+    semiMajorAxis: scaleOrbitDistance({ au: 0.387 }),
+    eccentricity: 0.2056,
+    orbitalPeriodDays: 87.969,
+    rotationPeriodHours: 1407.5,
+    axialTilt: 0.034,
+    inclination: 7.0,
     description:
       'Mercury is a heavily cratered world with extreme temperature swings. NASA\'s MESSENGER mission mapped its surface and studied its magnetic field.',
     highlights: [
@@ -39,10 +100,13 @@ export const celestialBodies = [
     id: 'venus',
     name: 'Venus',
     color: '#e6c15a',
-    orbitRadius: 13,
     size: 0.95,
-    orbitSpeed: 0.0095,
-    rotationSpeed: 0.0008,
+    semiMajorAxis: scaleOrbitDistance({ au: 0.723 }),
+    eccentricity: 0.0068,
+    orbitalPeriodDays: 224.701,
+    rotationPeriodHours: -5832.5,
+    axialTilt: 177.36,
+    inclination: 3.39,
     description:
       'Venus is a greenhouse world enveloped by thick clouds. Radar mapping by Magellan reveals volcanoes, mountains, and tectonic plains beneath the haze.',
     highlights: [
@@ -57,10 +121,13 @@ export const celestialBodies = [
     id: 'earth',
     name: 'Earth',
     color: '#2f8ae6',
-    orbitRadius: 18,
     size: 1,
-    orbitSpeed: 0.008,
-    rotationSpeed: 0.02,
+    semiMajorAxis: scaleOrbitDistance({ au: 1 }),
+    eccentricity: 0.0167,
+    orbitalPeriodDays: 365.256,
+    rotationPeriodHours: 23.934,
+    axialTilt: 23.44,
+    inclination: 0,
     description:
       'Earth is a water-rich, life-supporting world with dynamic weather, plate tectonics, and a protective magnetic field. NASA operates dozens of missions to monitor its systems.',
     highlights: [
@@ -75,10 +142,14 @@ export const celestialBodies = [
     id: 'moon',
     name: 'Moon',
     color: '#cfd2d7',
-    orbitRadius: 22,
     size: 0.27,
-    orbitSpeed: 0.0085,
-    rotationSpeed: 0.01,
+    semiMajorAxis: scaleOrbitDistance({ km: 384400 }),
+    eccentricity: 0.0549,
+    orbitalPeriodDays: 27.321,
+    rotationPeriodHours: 655.7,
+    axialTilt: 6.68,
+    inclination: 5.145,
+    parentId: 'earth',
     description:
       "Earth's Moon preserves a record of early solar-system history. Lunar Reconnaissance Orbiter continues to deliver topographic maps and ultra-high-resolution imagery.",
     highlights: [
@@ -93,10 +164,13 @@ export const celestialBodies = [
     id: 'mars',
     name: 'Mars',
     color: '#d05d3b',
-    orbitRadius: 26,
     size: 0.53,
-    orbitSpeed: 0.0065,
-    rotationSpeed: 0.015,
+    semiMajorAxis: scaleOrbitDistance({ au: 1.524 }),
+    eccentricity: 0.0934,
+    orbitalPeriodDays: 686.98,
+    rotationPeriodHours: 24.623,
+    axialTilt: 25.19,
+    inclination: 1.85,
     description:
       'Mars features towering volcanoes, ancient river deltas, and seasons similar to Earth. NASA rovers and orbiters study its past habitability and climate evolution.',
     highlights: [
@@ -111,10 +185,13 @@ export const celestialBodies = [
     id: 'jupiter',
     name: 'Jupiter',
     color: '#c58f5d',
-    orbitRadius: 33,
     size: 2.5,
-    orbitSpeed: 0.004,
-    rotationSpeed: 0.03,
+    semiMajorAxis: scaleOrbitDistance({ au: 5.203 }),
+    eccentricity: 0.0489,
+    orbitalPeriodDays: 4332.59,
+    rotationPeriodHours: 9.925,
+    axialTilt: 3.13,
+    inclination: 1.304,
     description:
       'The largest planet is a gas giant with swirling belts and the famous Great Red Spot. NASA\'s Juno mission peers beneath its cloud tops.',
     highlights: [
@@ -129,10 +206,23 @@ export const celestialBodies = [
     id: 'saturn',
     name: 'Saturn',
     color: '#f3d38c',
-    orbitRadius: 39,
     size: 2.2,
-    orbitSpeed: 0.003,
-    rotationSpeed: 0.028,
+    semiMajorAxis: scaleOrbitDistance({ au: 9.582 }),
+    eccentricity: 0.0565,
+    orbitalPeriodDays: 10759.22,
+    rotationPeriodHours: 10.656,
+    axialTilt: 26.73,
+    inclination: 2.485,
+    rings: {
+      innerRadius: 3.2,
+      outerRadius: 4.6,
+      colorStops: [
+        { offset: 0, color: 'rgba(255, 255, 255, 0.1)' },
+        { offset: 0.35, color: 'rgba(243, 211, 140, 0.45)' },
+        { offset: 0.65, color: 'rgba(212, 178, 120, 0.55)' },
+        { offset: 1, color: 'rgba(255, 255, 255, 0.1)' }
+      ]
+    },
     description:
       'Saturn is adorned with icy rings and moons like Titan and Enceladus. The Cassini mission revealed active geysers and complex atmospheric patterns.',
     highlights: [
@@ -147,10 +237,22 @@ export const celestialBodies = [
     id: 'uranus',
     name: 'Uranus',
     color: '#78d0e3',
-    orbitRadius: 45,
     size: 1.9,
-    orbitSpeed: 0.0024,
-    rotationSpeed: 0.02,
+    semiMajorAxis: scaleOrbitDistance({ au: 19.189 }),
+    eccentricity: 0.0472,
+    orbitalPeriodDays: 30685.4,
+    rotationPeriodHours: -17.24,
+    axialTilt: 97.77,
+    inclination: 0.773,
+    rings: {
+      innerRadius: 2.4,
+      outerRadius: 3.1,
+      colorStops: [
+        { offset: 0, color: 'rgba(180, 220, 255, 0.05)' },
+        { offset: 0.5, color: 'rgba(120, 190, 230, 0.25)' },
+        { offset: 1, color: 'rgba(180, 220, 255, 0.05)' }
+      ]
+    },
     description:
       'An ice giant tipped on its side, Uranus has extreme seasons and a faint ring system. Voyager 2 remains the only spacecraft to have visited it.',
     highlights: [
@@ -165,10 +267,13 @@ export const celestialBodies = [
     id: 'neptune',
     name: 'Neptune',
     color: '#3f6dd5',
-    orbitRadius: 52,
     size: 1.8,
-    orbitSpeed: 0.002,
-    rotationSpeed: 0.019,
+    semiMajorAxis: scaleOrbitDistance({ au: 30.07 }),
+    eccentricity: 0.0086,
+    orbitalPeriodDays: 60190,
+    rotationPeriodHours: 16.11,
+    axialTilt: 28.32,
+    inclination: 1.77,
     description:
       'Neptune is a windy ice giant with supersonic storms. Voyager 2 revealed its dynamic atmosphere and the moon Triton\'s icy geysers.',
     highlights: [
@@ -180,6 +285,8 @@ export const celestialBodies = [
     nasaQuery: 'Neptune Voyager Triton'
   }
 ];
+
+export const celestialBodies = rawBodies.map((body) => prepareBody(body));
 
 export function getBodyById(bodyId) {
   return celestialBodies.find((body) => body.id === bodyId);
