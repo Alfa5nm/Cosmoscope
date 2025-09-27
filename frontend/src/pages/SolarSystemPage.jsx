@@ -77,6 +77,42 @@ function CelestialBody({ body, isSelected, onSelect, onExplore, onPositionUpdate
     };
   }, [ringTexture]);
 
+  const textureMaps = body.textureMaps;
+
+  useEffect(() => {
+    if (!textureMaps) {
+      return undefined;
+    }
+
+    const entries =
+      textureMaps instanceof Map
+        ? Array.from(textureMaps.entries())
+        : Object.entries(textureMaps);
+
+    entries.forEach(([mapType, texture]) => {
+      if (!(texture instanceof THREE.Texture)) {
+        return;
+      }
+
+      const normalizedType = String(mapType).toLowerCase();
+      const isNormalMap = normalizedType.includes('normal');
+      const isColorBearing =
+        normalizedType.includes('diffuse') ||
+        normalizedType.includes('emissive') ||
+        normalizedType.includes('albedo') ||
+        normalizedType.includes('color');
+
+      if (!isColorBearing || isNormalMap) {
+        return;
+      }
+
+      texture.colorSpace = THREE.SRGBColorSpace;
+      texture.needsUpdate = true;
+    });
+
+    return undefined;
+  }, [textureMaps]);
+
   useEffect(() => {
     if (tiltGroupRef.current) {
       tiltGroupRef.current.rotation.z = THREE.MathUtils.degToRad(body.axialTilt || 0);
