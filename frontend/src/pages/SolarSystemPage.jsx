@@ -205,6 +205,20 @@ function CelestialBody({
 
   const emissiveColor = body.id === 'sun' ? '#f8a04a' : '#090b1a';
   const emissiveIntensity = body.id === 'sun' ? 1.15 : 0.08;
+  const atmosphereSettings = body.atmosphere ?? {};
+  const showAtmosphere = atmosphereSettings.enabled ?? body.id !== 'sun';
+  const atmosphereScale = atmosphereSettings.scale ?? (body.id === 'sun' ? 1 : 1.05);
+  const atmosphereOpacity = atmosphereSettings.opacity ?? (body.id === 'sun' ? 0.12 : 0.18);
+  const atmosphereEmissiveIntensity =
+    atmosphereSettings.emissiveIntensity ?? (body.id === 'sun' ? 0.4 : 0.35);
+
+  const rimColor = useMemo(() => {
+    const fallback = new THREE.Color('#ffffff');
+    const base = new THREE.Color(body.color ?? '#ffffff');
+    const rim = base.clone().lerp(fallback, 0.35);
+    return `#${rim.getHexString()}`;
+  }, [body.color]);
+  const atmosphereColor = atmosphereSettings.color ?? rimColor;
 
   return (
     <>
@@ -248,6 +262,20 @@ function CelestialBody({
               roughness={0.85}
               metalness={0.1}
             />
+            {showAtmosphere && (
+              <mesh scale={atmosphereScale} frustumCulled={false}>
+                <sphereGeometry args={[body.size, 32, 32]} />
+                <meshPhongMaterial
+                  color={atmosphereColor}
+                  emissive={atmosphereColor}
+                  emissiveIntensity={atmosphereEmissiveIntensity}
+                  transparent
+                  opacity={atmosphereOpacity}
+                  blending={THREE.AdditiveBlending}
+                  side={THREE.BackSide}
+                />
+              </mesh>
+            )}
             {body.rings && ringTexture && (
               <mesh rotation={[Math.PI / 2, 0, 0]}>
                 <ringGeometry args={[body.rings.innerRadius, body.rings.outerRadius, 128]} />
