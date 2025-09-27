@@ -1,90 +1,278 @@
-import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Canvas, useFrame, useThree } from '@react-three/fiber';
+import { Suspense, forwardRef, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Canvas, useFrame, useLoader, useThree } from '@react-three/fiber';
 import { Html, OrbitControls, Stars } from '@react-three/drei';
 import * as THREE from 'three';
+import { TextureLoader } from 'three';
 import { useNavigate } from 'react-router-dom';
 import { celestialBodies, getBodyById } from '../data/celestialBodies.js';
 import { getVisitedBodies, markBodyVisited } from '../utils/progress.js';
+import { buildTextureSet } from '../utils/textureRegistry.js';
 import { useSpaceAudio } from '../state/SpaceAudioContext.js';
 import NavigationConsole from '../components/NavigationConsole.jsx';
 
-function OrbitRing({ radius }) {
+const EMPTY_TEXTURE_DATA_URL =
+  'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M/wHwAFhAKK4PvJ4wAAAABJRU5ErkJggg==';
+
+const OrbitRing = forwardRef(function OrbitRing({ semiMajor, semiMinor, inclination = 0 }, ref) {
   const points = useMemo(() => {
-    const segments = 64;
+    if (!semiMajor || !semiMinor) return [];
+    const segments = 128;
     const pts = [];
+    const inclinationRad = THREE.MathUtils.degToRad(inclination);
+    const cosInc = Math.cos(inclinationRad);
+    const sinInc = Math.sin(inclinationRad);
     for (let i = 0; i <= segments; i += 1) {
       const theta = (i / segments) * Math.PI * 2;
-      pts.push(new THREE.Vector3(Math.cos(theta) * radius, 0, Math.sin(theta) * radius));
+      const x = semiMajor * Math.cos(theta);
+      const z = semiMinor * Math.sin(theta);
+      const y = z * sinInc;
+      const zInclined = z * cosInc;
+      pts.push(new THREE.Vector3(x, y, zInclined));
     }
     return pts;
-  }, [radius]);
+  }, [semiMajor, semiMinor, inclination]);
+
+  if (!points.length) {
+    return null;
+  }
 
   return (
-    <lineLoop>
-      <bufferGeometry attach="geometry" setFromPoints={points} />
-      <lineBasicMaterial attach="material" color="#3b4262" linewidth={1} />
-    </lineLoop>
+    <group ref={ref}>
+      <lineLoop>
+        <bufferGeometry attach="geometry" setFromPoints={points} />
+        <lineBasicMaterial attach="material" color="#3b4262" linewidth={1} />
+      </lineLoop>
+    </group>
   );
-}
+});
 
-function CelestialBody({ body, isSelected, onSelect, onExplore, onPositionUpdate }) {
+function CelestialBody({
+  body,
+  isSelected,
+  onSelect,
+  onExplore,
+  onPositionUpdate,
+  getBodyPosition
+}) {
   const groupRef = useRef();
   const meshRef = useRef();
+  const tiltGroupRef = useRef();
+  const orbitRingRef = useRef();
   const worldPosition = useRef(new THREE.Vector3());
   const orbitalPosition = useRef(new THREE.Vector3());
+  const orbitAngle = useRef(Math.random() * Math.PI * 2);
+  const { gl } = useThree();
+
+  const textureSources = useMemo(
+    () =>
+      buildTextureSet({
+        textureKey: body.textureKey,
+        normalMapKey: body.normalMapKey,
+        emissiveMapKey: body.emissiveMapKey
+      }),
+    [body.emissiveMapKey, body.normalMapKey, body.textureKey]
+  );
+
+  const hasDiffuseTexture = Boolean(textureSources.map);
+  const hasNormalMap = Boolean(textureSources.normalMap);
+  const hasEmissiveMap = Boolean(textureSources.emissiveMap);
+
+  const diffuseMap = useLoader(
+    TextureLoader,
+    hasDiffuseTexture ? textureSources.map : EMPTY_TEXTURE_DATA_URL
+  );
+  const normalMap = useLoader(
+    TextureLoader,
+    hasNormalMap ? textureSources.normalMap : EMPTY_TEXTURE_DATA_URL
+  );
+  const emissiveMap = useLoader(
+    TextureLoader,
+    hasEmissiveMap ? textureSources.emissiveMap : EMPTY_TEXTURE_DATA_URL
+  );
+
+  useEffect(() => {
+    if (!hasDiffuseTexture && diffuseMap) {
+      diffuseMap.dispose();
+    }
+    if (!hasNormalMap && normalMap) {
+      normalMap.dispose();
+    }
+    if (!hasEmissiveMap && emissiveMap) {
+      emissiveMap.dispose();
+    }
+    return () => {
+      if (diffuseMap) diffuseMap.dispose();
+      if (normalMap) normalMap.dispose();
+      if (emissiveMap) emissiveMap.dispose();
+    };
+  }, [diffuseMap, emissiveMap, hasDiffuseTexture, hasEmissiveMap, hasNormalMap, normalMap]);
+
+  useEffect(() => {
+    const maxAnisotropy = Math.min(gl.capabilities.getMaxAnisotropy?.() ?? 1, 16);
+    if (hasDiffuseTexture && diffuseMap) {
+      diffuseMap.anisotropy = maxAnisotropy;
+      diffuseMap.colorSpace = THREE.SRGBColorSpace;
+      diffuseMap.needsUpdate = true;
+    }
+    if (hasEmissiveMap && emissiveMap) {
+      emissiveMap.anisotropy = maxAnisotropy;
+      emissiveMap.colorSpace = THREE.SRGBColorSpace;
+      emissiveMap.needsUpdate = true;
+    }
+    if (hasNormalMap && normalMap) {
+      normalMap.anisotropy = maxAnisotropy;
+      normalMap.needsUpdate = true;
+    }
+  }, [diffuseMap, emissiveMap, gl, hasDiffuseTexture, hasEmissiveMap, hasNormalMap, normalMap]);
+
+  useEffect(() => {
+    if (tiltGroupRef.current) {
+      tiltGroupRef.current.rotation.z = body.axialTiltRad ?? 0;
+    }
+  }, [body.axialTiltRad]);
+
+  const ringTexture = useMemo(() => {
+    if (!body.rings) return null;
+    if (typeof document === 'undefined') return null;
+    const size = 512;
+    const canvas = document.createElement('canvas');
+    canvas.width = size;
+    canvas.height = size;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return null;
+    const gradient = ctx.createRadialGradient(size / 2, size / 2, size * 0.2, size / 2, size / 2, size / 2);
+    body.rings.colorStops.forEach((stop) => {
+      gradient.addColorStop(stop.offset, stop.color);
+    });
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, size, size);
+    const texture = new THREE.CanvasTexture(canvas);
+    texture.colorSpace = THREE.SRGBColorSpace;
+    texture.needsUpdate = true;
+    return texture;
+  }, [body.rings]);
+
+  useEffect(() => {
+    if (!ringTexture) return undefined;
+    return () => {
+      ringTexture.dispose();
+    };
+  }, [ringTexture]);
 
   useFrame(({ clock }) => {
-    const elapsed = clock.getElapsedTime();
-    const orbitAngle = elapsed * body.orbitSpeed;
-    const x = Math.cos(orbitAngle) * body.orbitRadius;
-    const z = Math.sin(orbitAngle) * body.orbitRadius;
-    if (groupRef.current) {
-      groupRef.current.position.set(x, 0, z);
+    const delta = clock.getDelta();
+    orbitAngle.current += body.orbitRate * delta;
+    const angle = orbitAngle.current;
+    const x = body.semiMajorAxis * Math.cos(angle);
+    const z = body.semiMinorAxis * Math.sin(angle);
+    const inclinationRad = body.inclinationRad || 0;
+    const y = z * Math.sin(inclinationRad);
+    const zInclined = z * Math.cos(inclinationRad);
+
+    orbitalPosition.current.set(x, y, zInclined);
+    let parentCoords = null;
+
+    if (body.parentId && getBodyPosition) {
+      const parent = getBodyPosition(body.parentId);
+      if (parent) {
+        parentCoords = parent;
+        orbitalPosition.current.x += parent[0];
+        orbitalPosition.current.y += parent[1];
+        orbitalPosition.current.z += parent[2];
+      }
     }
-    orbitalPosition.current.set(x, 0, z);
+
+    if (groupRef.current) {
+      groupRef.current.position.copy(orbitalPosition.current);
+    }
+
     if (onPositionUpdate) {
       onPositionUpdate(body.id, orbitalPosition.current);
     }
+
     if (meshRef.current) {
-      meshRef.current.rotation.y += body.rotationSpeed;
+      meshRef.current.rotation.y += body.rotationRate * delta;
+    }
+
+    if (orbitRingRef.current) {
+      if (parentCoords) {
+        orbitRingRef.current.position.set(parentCoords[0], parentCoords[1], parentCoords[2]);
+      } else {
+        orbitRingRef.current.position.set(0, 0, 0);
+      }
     }
   });
 
+  const emissiveColor = body.id === 'sun' ? '#f8a04a' : '#090b1a';
+  const emissiveIntensity = body.id === 'sun' ? 1.15 : 0.08;
+
   return (
-    <group ref={groupRef}>
-      {body.orbitRadius > 0 && <OrbitRing radius={body.orbitRadius} />}
-      <mesh
-        ref={meshRef}
-        position={[0, 0, 0]}
-        onClick={(event) => {
-          event.stopPropagation();
-          if (groupRef.current) {
-            onSelect(body, groupRef.current.getWorldPosition(worldPosition.current.clone()));
-          } else {
-            onSelect(body, new THREE.Vector3());
-          }
-        }}
-        onPointerOver={(event) => {
-          event.stopPropagation();
-          document.body.style.cursor = 'pointer';
-        }}
-        onPointerOut={() => {
-          document.body.style.cursor = 'default';
-        }}
-      >
-        <sphereGeometry args={[body.size, 32, 32]} />
-        <meshStandardMaterial color={body.color} emissive={body.id === 'sun' ? '#c96f15' : '#111'} emissiveIntensity={0.2} />
-        {isSelected && (
-          <Html distanceFactor={12} transform position={[0, body.size * 1.4, 0]}>
-            <article className="body-tooltip">
-              <h3>{body.name}</h3>
-              <p>{body.description}</p>
-              <button onClick={() => onExplore(body)}>Explore</button>
-            </article>
-          </Html>
-        )}
-      </mesh>
-    </group>
+    <>
+      {body.semiMajorAxis > 0 && (
+        <OrbitRing
+          ref={orbitRingRef}
+          semiMajor={body.semiMajorAxis}
+          semiMinor={body.semiMinorAxis}
+          inclination={body.inclination}
+        />
+      )}
+      <group ref={groupRef}>
+        <group ref={tiltGroupRef}>
+          <mesh
+            ref={meshRef}
+            position={[0, 0, 0]}
+            onClick={(event) => {
+              event.stopPropagation();
+              if (groupRef.current) {
+                onSelect(body, groupRef.current.getWorldPosition(worldPosition.current.clone()));
+              } else {
+                onSelect(body, new THREE.Vector3());
+              }
+            }}
+            onPointerOver={(event) => {
+              event.stopPropagation();
+              document.body.style.cursor = 'pointer';
+            }}
+            onPointerOut={() => {
+              document.body.style.cursor = 'default';
+            }}
+          >
+            <sphereGeometry args={[body.size, 32, 32]} />
+            <meshStandardMaterial
+              color={body.color}
+              map={hasDiffuseTexture ? diffuseMap : null}
+              normalMap={hasNormalMap ? normalMap : null}
+              emissive={emissiveColor}
+              emissiveMap={hasEmissiveMap ? emissiveMap : null}
+              emissiveIntensity={emissiveIntensity}
+              roughness={0.85}
+              metalness={0.1}
+            />
+            {body.rings && ringTexture && (
+              <mesh rotation={[Math.PI / 2, 0, 0]}>
+                <ringGeometry args={[body.rings.innerRadius, body.rings.outerRadius, 128]} />
+                <meshStandardMaterial
+                  map={ringTexture}
+                  transparent
+                  opacity={0.85}
+                  side={THREE.DoubleSide}
+                  depthWrite={false}
+                />
+              </mesh>
+            )}
+            {isSelected && (
+              <Html distanceFactor={12} transform position={[0, body.size * 1.4, 0]}>
+                <article className="body-tooltip">
+                  <h3>{body.name}</h3>
+                  <p>{body.description}</p>
+                  <button onClick={() => onExplore(body)}>Explore</button>
+                </article>
+              </Html>
+            )}
+          </mesh>
+        </group>
+      </group>
+    </>
   );
 }
 
@@ -114,7 +302,7 @@ export default function SolarSystemPage() {
   const [selectedBodyId, setSelectedBodyId] = useState('earth');
   const [focusPosition, setFocusPosition] = useState(() => {
     const initial = getBodyById('earth');
-    return initial ? [initial.orbitRadius, 0, 0] : [0, 0, 0];
+    return initial ? [initial.semiMajorAxis, 0, 0] : [0, 0, 0];
   });
   const [visitedBodies, setVisitedBodies] = useState(() => getVisitedBodies());
   const { start } = useSpaceAudio();
@@ -136,9 +324,11 @@ export default function SolarSystemPage() {
     if (stored) {
       setFocusPosition([stored[0], stored[1], stored[2]]);
     } else {
-      setFocusPosition([body.orbitRadius, 0, 0]);
+      setFocusPosition([body.semiMajorAxis, 0, 0]);
     }
   }, []);
+
+  const getBodyPosition = useCallback((bodyId) => bodyPositionsRef.current.get(bodyId), []);
 
   const handleMarkVisited = useCallback((bodyId) => {
     const updated = markBodyVisited(bodyId);
@@ -180,7 +370,8 @@ export default function SolarSystemPage() {
           <h1>Solar System Navigator</h1>
           <p>{selectedBody ? `${selectedBody.name} briefing loaded.` : 'Select a body to begin.'}</p>
           <p>
-            Progress: {visitedBodies.size} / {celestialBodies.length} bodies ({Number.isFinite(progressPercentage) ? progressPercentage : 0}% tracked)
+            Progress: {visitedBodies.size} / {celestialBodies.length} bodies (
+            {Number.isFinite(progressPercentage) ? progressPercentage : 0}% tracked)
           </p>
         </div>
         <button onClick={() => navigate('/workbench')} className="secondary">
@@ -192,8 +383,9 @@ export default function SolarSystemPage() {
           <Suspense fallback={<div className="solar-loading">Preparing star charts…</div>}>
             <Canvas camera={{ position: [0, 12, 55], fov: 50 }} shadows>
               <color attach="background" args={[0x02030f]} />
-              <ambientLight intensity={0.2} />
-              <pointLight position={[0, 0, 0]} intensity={2.5} color="#ffdca8" />
+              <ambientLight intensity={0.28} color="#1a2134" />
+              <hemisphereLight skyColor="#45648f" groundColor="#05060d" intensity={0.35} />
+              <pointLight position={[0, 0, 0]} intensity={3} distance={280} decay={2} color="#ffd39c" castShadow />
               <Stars radius={120} depth={40} count={3000} factor={6} saturation={0} fade speed={0.5} />
               {celestialBodies.map((body) => (
                 <CelestialBody
@@ -203,6 +395,7 @@ export default function SolarSystemPage() {
                   onSelect={handleSelect}
                   onExplore={handleExplore}
                   onPositionUpdate={handlePositionUpdate}
+                  getBodyPosition={getBodyPosition}
                 />
               ))}
               <CameraRig focusPosition={focusPosition} />

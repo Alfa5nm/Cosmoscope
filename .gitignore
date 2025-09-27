@@ -7,3 +7,7 @@ frontend/dist
 npm-debug.log*
 yarn-error.log*
 pnpm-debug.log*
+
+# Local high-resolution textures supplied out of band
+frontend/src/assets/textures/*
+!frontend/src/assets/textures/.gitkeep
