@@ -4,6 +4,7 @@ import { Html, OrbitControls, Stars } from '@react-three/drei';
 import * as THREE from 'three';
 import { useNavigate } from 'react-router-dom';
 import { celestialBodies, getBodyById } from '../data/celestialBodies.js';
+import { buildTextureSet } from '../utils/textureGenerators.js';
 import { getVisitedBodies, markBodyVisited } from '../utils/progress.js';
 import { useSpaceAudio } from '../state/SpaceAudioContext.js';
 import NavigationConsole from '../components/NavigationConsole.jsx';
@@ -32,6 +33,56 @@ function CelestialBody({ body, isSelected, onSelect, onExplore, onPositionUpdate
   const meshRef = useRef();
   const worldPosition = useRef(new THREE.Vector3());
   const orbitalPosition = useRef(new THREE.Vector3());
+  const { gl } = useThree();
+
+  const textureMaps = useMemo(
+    () =>
+      buildTextureSet({
+        textureKey: body.textureKey,
+        normalMapKey: body.normalMapKey,
+        emissiveMapKey: body.emissiveMapKey
+      }),
+    [body.emissiveMapKey, body.normalMapKey, body.textureKey]
+  );
+
+  useEffect(() => {
+    const textures = Object.values(textureMaps);
+    return () => {
+      textures.forEach((texture) => {
+        texture?.dispose();
+      });
+    };
+  }, [textureMaps]);
+
+  useEffect(() => {
+    const maxAnisotropy = Math.min(gl.capabilities.getMaxAnisotropy(), 16);
+    if (textureMaps.map) {
+      textureMaps.map.anisotropy = maxAnisotropy;
+      textureMaps.map.colorSpace = THREE.SRGBColorSpace;
+      textureMaps.map.needsUpdate = true;
+    }
+    if (textureMaps.emissiveMap) {
+      textureMaps.emissiveMap.anisotropy = maxAnisotropy;
+      textureMaps.emissiveMap.colorSpace = THREE.SRGBColorSpace;
+      textureMaps.emissiveMap.needsUpdate = true;
+    }
+    if (textureMaps.normalMap) {
+      textureMaps.normalMap.anisotropy = maxAnisotropy;
+      textureMaps.normalMap.needsUpdate = true;
+    }
+  }, [gl, textureMaps]);
+
+  const rimColor = useMemo(() => {
+    const color = new THREE.Color(body.color);
+    const rim = color.clone().lerp(new THREE.Color('#ffffff'), 0.35);
+    return `#${rim.getHexString()}`;
+  }, [body.color]);
+
+  const emissiveColor = body.id === 'sun' ? '#f8a04a' : '#090b1a';
+  const emissiveIntensity = body.id === 'sun' ? 1.15 : 0.08;
+
+  const atmosphereScale = body.id === 'sun' ? 1 : 1.05;
+  const showAtmosphere = body.id !== 'sun';
 
   useFrame(({ clock }) => {
     const elapsed = clock.getElapsedTime();
@@ -73,7 +124,30 @@ function CelestialBody({ body, isSelected, onSelect, onExplore, onPositionUpdate
         }}
       >
         <sphereGeometry args={[body.size, 32, 32]} />
-        <meshStandardMaterial color={body.color} emissive={body.id === 'sun' ? '#c96f15' : '#111'} emissiveIntensity={0.2} />
+        <meshStandardMaterial
+          color={body.color}
+          map={textureMaps.map}
+          normalMap={textureMaps.normalMap}
+          emissive={emissiveColor}
+          emissiveMap={textureMaps.emissiveMap}
+          emissiveIntensity={emissiveIntensity}
+          roughness={0.85}
+          metalness={0.1}
+        />
+        {showAtmosphere && (
+          <mesh scale={atmosphereScale} frustumCulled={false}>
+            <sphereGeometry args={[body.size, 32, 32]} />
+            <meshPhongMaterial
+              color={rimColor}
+              emissive={rimColor}
+              emissiveIntensity={0.35}
+              transparent
+              opacity={0.18}
+              blending={THREE.AdditiveBlending}
+              side={THREE.BackSide}
+            />
+          </mesh>
+        )}
         {isSelected && (
           <Html distanceFactor={12} transform position={[0, body.size * 1.4, 0]}>
             <article className="body-tooltip">
@@ -192,8 +266,9 @@ export default function SolarSystemPage() {
           <Suspense fallback={<div className="solar-loading">Preparing star charts…</div>}>
             <Canvas camera={{ position: [0, 12, 55], fov: 50 }} shadows>
               <color attach="background" args={[0x02030f]} />
-              <ambientLight intensity={0.2} />
-              <pointLight position={[0, 0, 0]} intensity={2.5} color="#ffdca8" />
+              <ambientLight intensity={0.28} color="#1a2134" />
+              <hemisphereLight skyColor="#45648f" groundColor="#05060d" intensity={0.35} />
+              <pointLight position={[0, 0, 0]} intensity={3} distance={280} decay={2} color="#ffd39c" castShadow />
               <Stars radius={120} depth={40} count={3000} factor={6} saturation={0} fade speed={0.5} />
               {celestialBodies.map((body) => (
                 <CelestialBody
