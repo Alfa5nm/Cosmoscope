@@ -100,6 +100,9 @@ const DATASETS = [
   }
 ];
 
+const AVAILABLE_DATES_TTL_MS = 5 * 60 * 1000;
+const availableDatesCache = new Map();
+
 async function ensureAnnotationsFile() {
   try {
     await fs.access(ANNOTATIONS_PATH);
@@ -160,9 +163,13 @@ app.get('/api/gibs/available-dates', async (req, res) => {
     return { iso, testUrl };
   });
 
-  const checks = descriptors.map(({ testUrl }) =>
-    fetch(testUrl, { method: 'HEAD' })
-  );
+  const cacheKey = `${layer}:${days}`;
+  const cachedEntry = availableDatesCache.get(cacheKey);
+  if (cachedEntry && Date.now() - cachedEntry.timestamp < AVAILABLE_DATES_TTL_MS) {
+    return res.json({ layer, dates: cachedEntry.dates });
+  }
+
+  const checks = descriptors.map(({ testUrl }) => fetch(testUrl, { method: 'HEAD' }));
 
   const responses = await Promise.allSettled(checks);
 
@@ -178,6 +185,8 @@ app.get('/api/gibs/available-dates', async (req, res) => {
       console.warn('Date availability check failed', result.reason?.message || result.reason);
     }
   });
+
+  availableDatesCache.set(cacheKey, { timestamp: Date.now(), dates: results });
 
   res.json({ layer, dates: results });
 });
