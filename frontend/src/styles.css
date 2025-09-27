@@ -294,27 +294,185 @@ button:disabled {
   backdrop-filter: blur(14px);
 }
 
-.landing-progress ul {
-  margin: 1.25rem 0 0;
-  padding: 0;
-  list-style: none;
+.mission-board {
+  margin-top: 1.25rem;
+  border-radius: 1rem;
+  background: linear-gradient(145deg, rgba(10, 16, 32, 0.9), rgba(6, 10, 24, 0.75));
+  border: 1px solid rgba(136, 192, 255, 0.14);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 20px 40px rgba(3, 6, 18, 0.6);
+  padding: 1rem 1.1rem 1.2rem;
   display: grid;
-  gap: 0.6rem;
+  gap: 1rem;
 }
 
-.landing-progress li {
+.mission-board-console {
+  display: grid;
+  gap: 0.4rem;
+}
+
+.mission-board-label {
+  text-transform: uppercase;
+  font-size: 0.65rem;
+  letter-spacing: 0.18em;
+  color: rgba(197, 214, 255, 0.65);
+}
+
+.mission-board-select {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: center;
+  background: rgba(5, 9, 21, 0.72);
+  border: 1px solid rgba(136, 192, 255, 0.18);
+  border-radius: 0.75rem;
+  padding: 0.55rem 0.75rem;
+  box-shadow: inset 0 0 12px rgba(88, 134, 210, 0.12);
+}
+
+.mission-board-select select {
+  background: rgba(10, 15, 30, 0.65);
+  border: 1px solid rgba(136, 192, 255, 0.28);
+  color: #e7edff;
+  padding: 0.45rem 0.75rem;
+  border-radius: 0.65rem;
+  font-size: 0.9rem;
+  font-family: 'Share Tech Mono', 'Fira Code', monospace;
+  letter-spacing: 0.05em;
+  appearance: none;
+  position: relative;
+  box-shadow: 0 4px 14px rgba(10, 20, 40, 0.35);
+}
+
+.mission-board-select select:focus-visible {
+  outline: 2px solid rgba(149, 254, 170, 0.55);
+  outline-offset: 3px;
+}
+
+.mission-board-status {
+  font-size: 0.75rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: rgba(143, 220, 255, 0.75);
+}
+
+.mission-card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 0.9rem;
+}
+
+.mission-card {
+  display: grid;
+  grid-template-columns: 70px 1fr;
+  gap: 0.85rem;
+  padding: 0.8rem 0.9rem;
+  border-radius: 1rem;
+  background: rgba(7, 11, 24, 0.78);
+  border: 1px solid rgba(136, 192, 255, 0.16);
+  transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+  box-shadow: 0 8px 24px rgba(4, 8, 20, 0.45);
+}
+
+.mission-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(149, 254, 170, 0.25);
+  box-shadow: 0 18px 30px rgba(3, 7, 18, 0.55);
+}
+
+.mission-card.active {
+  border-color: rgba(149, 254, 170, 0.35);
+  box-shadow: 0 20px 42px rgba(2, 10, 32, 0.65);
+}
+
+.mission-card.completed {
+  background: linear-gradient(165deg, rgba(10, 16, 32, 0.9), rgba(9, 20, 28, 0.75));
+  border-color: rgba(149, 254, 170, 0.4);
+}
+
+.mission-card-badge {
+  position: relative;
+  border-radius: 0.9rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  min-height: 100%;
+}
+
+.mission-card-initials {
+  font-family: 'Share Tech Mono', 'Fira Code', monospace;
+  font-size: 0.95rem;
+  letter-spacing: 0.2em;
+  color: rgba(8, 12, 22, 0.85);
+  text-transform: uppercase;
+  background: rgba(255, 255, 255, 0.82);
+  padding: 0.2rem 0.35rem;
+  border-radius: 0.4rem;
+}
+
+.mission-card-body {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.mission-card-body header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 0.5rem;
+}
+
+.mission-card-body h3 {
+  margin: 0;
+  font-size: 1.05rem;
+}
+
+.mission-card-status {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: rgba(181, 220, 255, 0.65);
+}
+
+.mission-card-body p {
+  margin: 0;
+  font-size: 0.85rem;
+  color: rgba(215, 226, 255, 0.78);
+}
+
+.mission-card-actions {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 0.65rem 0.9rem;
-  border-radius: 0.75rem;
-  background: rgba(13, 20, 40, 0.7);
-  border: 1px solid rgba(136, 192, 255, 0.12);
+  gap: 0.75rem;
 }
 
-.landing-progress li.visited {
-  border-color: rgba(149, 254, 170, 0.35);
-  background: rgba(12, 24, 32, 0.85);
+.mission-card-tag {
+  font-size: 0.7rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(149, 212, 255, 0.72);
+}
+
+.mission-card-button {
+  padding: 0.45rem 0.9rem;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  border-radius: 0.65rem;
+  background: linear-gradient(135deg, rgba(149, 254, 170, 0.85), rgba(94, 201, 255, 0.85));
+  border: none;
+  color: rgba(7, 12, 20, 0.9);
+  font-weight: 600;
+  box-shadow: 0 12px 24px rgba(6, 15, 30, 0.45);
+}
+
+.mission-card-button:disabled {
+  opacity: 0.65;
+  background: rgba(149, 254, 170, 0.35);
+  color: rgba(211, 233, 220, 0.8);
+  cursor: default;
+  box-shadow: none;
 }
 
 .landing-footer {
