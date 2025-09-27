@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef } from 'react';
-import Map from 'ol/Map';
+import OlMap from 'ol/Map';
 import View from 'ol/View';
 import { fromLonLat, toLonLat } from 'ol/proj';
 import TileLayer from 'ol/layer/Tile';
@@ -84,7 +84,7 @@ export default function MapViewport() {
 
   useEffect(() => {
     if (!mapElementRef.current || mapRef.current) return;
-    const map = new Map({
+    const map = new OlMap({
       target: mapElementRef.current,
       view: baseView,
       layers: [],
