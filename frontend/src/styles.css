@@ -468,6 +468,88 @@ button:disabled {
   color: rgba(215, 224, 255, 0.85);
 }
 
+.intel-tabs {
+  background: rgba(9, 14, 28, 0.88);
+  border: 1px solid rgba(136, 192, 255, 0.18);
+  border-radius: 1.3rem;
+  padding: clamp(1rem, 2vw, 1.5rem);
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  box-shadow: 0 20px 42px rgba(4, 8, 18, 0.45);
+}
+
+.intel-tabs__list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 0.75rem;
+}
+
+.tab-button {
+  cursor: pointer;
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  border-radius: 0.85rem;
+  border: 1px solid rgba(136, 192, 255, 0.18);
+  background: rgba(13, 22, 42, 0.75);
+  color: rgba(222, 233, 255, 0.9);
+  padding: 0.85rem 1rem;
+  transition: border 0.2s ease, background 0.25s ease, transform 0.2s ease, box-shadow 0.25s ease;
+}
+
+.tab-button__label {
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+.tab-button__hint {
+  font-size: 0.75rem;
+  color: rgba(198, 211, 255, 0.7);
+}
+
+.tab-button:hover,
+.tab-button.is-active {
+  border-color: rgba(148, 255, 197, 0.45);
+  background: linear-gradient(135deg, rgba(29, 51, 89, 0.95), rgba(19, 38, 70, 0.95));
+  box-shadow: 0 10px 24px rgba(10, 18, 36, 0.4);
+  transform: translateY(-1px);
+}
+
+.tab-button[aria-selected='true'] {
+  color: #f8fbff;
+}
+
+.tab-button:focus-visible {
+  outline: 3px solid rgba(148, 255, 197, 0.8);
+  outline-offset: 2px;
+}
+
+.intel-tabs__panels {
+  display: grid;
+}
+
+.tab-panel {
+  background: rgba(7, 13, 28, 0.78);
+  border: 1px solid rgba(136, 192, 255, 0.16);
+  border-radius: 1.1rem;
+  padding: clamp(1rem, 2.5vw, 1.75rem);
+  opacity: 0;
+  transform: translateY(12px);
+  pointer-events: none;
+  visibility: hidden;
+  transition: opacity 0.3s ease, transform 0.35s ease, box-shadow 0.35s ease;
+}
+
+.tab-panel.is-active {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+  visibility: visible;
+  box-shadow: 0 14px 28px rgba(8, 12, 24, 0.5);
+}
+
 .body-datasets .dataset-grid {
   display: grid;
   gap: 1rem;
@@ -492,6 +574,115 @@ button:disabled {
   display: grid;
   gap: 1rem;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.body-missions {
+  display: grid;
+  gap: 1rem;
+}
+
+.body-missions h2 {
+  margin-bottom: 0.25rem;
+}
+
+.body-missions p {
+  margin: 0;
+  color: rgba(202, 214, 255, 0.78);
+  line-height: 1.6;
+}
+
+.mission-list {
+  list-style: none;
+  margin: 1.25rem 0 0;
+  padding: 0;
+  display: grid;
+  gap: 1rem;
+}
+
+.mission-card {
+  background: rgba(10, 17, 35, 0.88);
+  border: 1px solid rgba(136, 192, 255, 0.16);
+  border-radius: 1rem;
+  padding: 1.1rem 1.25rem;
+  display: grid;
+  gap: 0.75rem;
+  transition: border 0.2s ease, box-shadow 0.3s ease, transform 0.25s ease;
+}
+
+.mission-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 24px rgba(8, 12, 24, 0.4);
+}
+
+.mission-card header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 0.75rem;
+}
+
+.mission-status {
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(148, 255, 197, 0.75);
+}
+
+.mission-card--awaiting-launch .mission-status {
+  color: rgba(136, 192, 255, 0.6);
+}
+
+.mission-card--awaiting-launch {
+  border-color: rgba(136, 192, 255, 0.18);
+}
+
+.mission-card--in-progress {
+  border-color: rgba(148, 255, 197, 0.35);
+}
+
+.mission-card--completed {
+  border-color: rgba(148, 255, 197, 0.6);
+  background: linear-gradient(135deg, rgba(14, 36, 48, 0.92), rgba(17, 52, 62, 0.88));
+}
+
+.mission-objectives {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.mission-objectives label {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: 0.6rem;
+  font-size: 0.85rem;
+  color: rgba(202, 214, 255, 0.85);
+}
+
+.mission-objectives input[type='checkbox'] {
+  width: 1rem;
+  height: 1rem;
+  accent-color: #88ffc5;
+  cursor: pointer;
+}
+
+.mission-objectives label.is-complete span {
+  color: rgba(148, 255, 197, 0.82);
+  text-decoration: none;
+}
+
+.mission-complete {
+  margin-top: 1rem;
+  padding: 0.75rem 1rem;
+  border-radius: 0.85rem;
+  background: rgba(20, 42, 52, 0.9);
+  border: 1px solid rgba(148, 255, 197, 0.4);
+  color: rgba(210, 244, 233, 0.95);
+  font-size: 0.9rem;
+}
+
+.muted {
+  color: rgba(175, 189, 229, 0.65);
 }
 
 .media-card {
